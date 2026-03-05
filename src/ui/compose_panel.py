@@ -141,21 +141,27 @@ class ComposePanel(QWidget):
         ab.setContentsMargins(16, 8, 16, 8)
         ab.setSpacing(8)
 
+        def _hex6(c):
+            if c.startswith("#") and len(c) == 4:
+                return f"#{c[1]*2}{c[2]*2}{c[3]*2}"
+            return c
+
         def _btn(label, color=ACCENT):
             b = QPushButton(label)
             b.setFixedHeight(26)
             b.setFixedWidth(110)
             b.setCursor(Qt.CursorShape.PointingHandCursor)
+            c = _hex6(color)
             b.setStyleSheet(f"""
                 QPushButton {{
-                    background: {color};
+                    background: {c};
                     color: white;
                     border: none;
                     border-radius: 4px;
                     font-size: 11px;
                 }}
-                QPushButton:hover {{ background: {color}cc; }}
-                QPushButton:disabled {{ background: #444; color: #777; }}
+                QPushButton:hover {{ background: {c}cc; }}
+                QPushButton:disabled {{ background: #444444; color: #777777; }}
             """)
             return b
 

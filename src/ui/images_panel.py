@@ -162,24 +162,25 @@ class ImagesPanel(QWidget):
         ab.setSpacing(8)
 
         def _btn(label, color=ACCENT):
+            c = color if len(color) != 4 else f"#{color[1]*2}{color[2]*2}{color[3]*2}"
             b = QPushButton(label)
             b.setFixedHeight(26)
             b.setFixedWidth(90)
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.setStyleSheet(f"""
                 QPushButton {{
-                    background: {color};
+                    background: {c};
                     color: white;
                     border: none;
                     border-radius: 4px;
                     font-size: 11px;
                 }}
-                QPushButton:hover {{ background: {color}cc; }}
-                QPushButton:disabled {{ background: #444; color: #777; }}
+                QPushButton:hover {{ background: {c}cc; }}
+                QPushButton:disabled {{ background: #444444; color: #777777; }}
             """)
             return b
 
-        self._btn_inspect = _btn("Inspect", "#555")
+        self._btn_inspect = _btn("Inspect", "#555555")
         self._btn_remove  = _btn("Remove",  RED)
         self._btn_prune   = _btn("Prune dangling", YELLOW)
         self._btn_prune.setFixedWidth(130)

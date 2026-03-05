@@ -70,23 +70,32 @@ def _short_id(full_id: str) -> str:
     return full_id[:12]
 
 
+def _hex6(color: str) -> str:
+    """Expand #rgb shorthand to #rrggbb so CSS alpha suffixes are valid."""
+    if color.startswith("#") and len(color) == 4:
+        r, g, b = color[1], color[2], color[3]
+        return f"#{r}{r}{g}{g}{b}{b}"
+    return color
+
+
 class ActionButton(QPushButton):
     def __init__(self, text: str, color: str = ACCENT, parent=None):
         super().__init__(text, parent)
         self.setFixedHeight(26)
         self.setFixedWidth(72)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        c = _hex6(color)
         self.setStyleSheet(f"""
             QPushButton {{
-                background: {color};
+                background: {c};
                 color: white;
                 border: none;
                 border-radius: 4px;
                 font-size: 11px;
                 padding: 0 8px;
             }}
-            QPushButton:hover {{ background: {color}cc; }}
-            QPushButton:disabled {{ background: #444; color: #777; }}
+            QPushButton:hover {{ background: {c}cc; }}
+            QPushButton:disabled {{ background: #444444; color: #777777; }}
         """)
 
 

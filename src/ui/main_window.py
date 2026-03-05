@@ -190,6 +190,10 @@ class MainWindow(QMainWindow):
         self.setStatusBar(sb)
         self._status_bar = sb
 
+        # Load initial panel (Containers) — the Sidebar emitted nav_changed(0)
+        # before our signal was connected, so we trigger it manually here.
+        self._ensure_panel(0)
+
     def _on_nav(self, index: int):
         self._ensure_panel(index)
         self._stack.setCurrentIndex(index)
