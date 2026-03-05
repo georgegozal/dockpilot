@@ -36,7 +36,10 @@ class NavButton(QPushButton):
         layout.setSpacing(10)
 
         icon_lbl = QLabel(self._icon_text)
-        icon_lbl.setFont(QFont("Segoe UI Emoji", 16))
+        # Use platform-appropriate emoji font to avoid Qt font-fallback delay
+        import sys
+        emoji_font = "Apple Color Emoji" if sys.platform == "darwin" else "Segoe UI Emoji"
+        icon_lbl.setFont(QFont(emoji_font, 16))
         icon_lbl.setFixedWidth(24)
         icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(icon_lbl)

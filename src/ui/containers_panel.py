@@ -300,10 +300,16 @@ class ContainersPanel(QWidget):
         self._refresh_timer.start(5000)
 
     def _refresh(self):
+        if not self._docker.is_connected:
+            # Try to reconnect silently
+            self._docker.ping()
         show_all = self._all_check.isChecked()
         self._containers = self._docker.containers(all=show_all)
         self._populate_table()
-        self._refresh_label.setText(f"Auto-refresh: 5 s")
+        if self._docker.is_connected:
+            self._refresh_label.setText("Auto-refresh: 5 s")
+        else:
+            self._refresh_label.setText("Docker not running — waiting…")
 
     def _populate_table(self):
         flt = self._search.text().lower()

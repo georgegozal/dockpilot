@@ -6,6 +6,27 @@ import struct
 import termios
 import subprocess
 import signal
+import shutil
+
+# Common docker binary locations on macOS / Linux (fallback if not in PATH)
+_DOCKER_FALLBACK_PATHS = [
+    "/usr/local/bin/docker",
+    "/opt/homebrew/bin/docker",
+    "/Applications/Docker.app/Contents/Resources/bin/docker",
+    "/usr/bin/docker",
+]
+
+
+def _find_docker() -> str | None:
+    """Locate the docker binary via PATH then common macOS/Linux locations."""
+    found = shutil.which("docker")
+    if found:
+        return found
+    for path in _DOCKER_FALLBACK_PATHS:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    return None
+
 
 import pyte
 from PyQt6.QtWidgets import (
@@ -176,17 +197,29 @@ class ContainerTerminalWidget(QWidget):
 
     def _start_exec(self):
         self._dead = False
+
+        docker_bin = _find_docker()
+        if not docker_bin:
+            self._status_label.setText("docker CLI not found — add it to PATH")
+            self._status_label.setStyleSheet(f"color: {RED}; font-size: 11px;")
+            return
+
         master_fd, slave_fd = pty.openpty()
         self._master_fd = master_fd
 
         self._set_pty_size(self._rows, self._cols)
 
+        # Build env: inherit current env so docker can find its socket/config
+        env = os.environ.copy()
+        env.setdefault("TERM", "xterm-256color")
+
         # Try bash first, then sh
         launched = False
+        last_error = ""
         for shell in ["/bin/bash", "/bin/sh"]:
             try:
                 self._process = subprocess.Popen(
-                    ["docker", "exec", "-it",
+                    [docker_bin, "exec", "-it",
                      "-e", "TERM=xterm-256color",
                      self._container_id, shell],
                     stdin=slave_fd,
@@ -194,16 +227,20 @@ class ContainerTerminalWidget(QWidget):
                     stderr=slave_fd,
                     close_fds=True,
                     preexec_fn=os.setsid,
+                    env=env,
                 )
                 launched = True
                 break
-            except Exception:
+            except Exception as exc:
+                last_error = str(exc)
                 continue
 
         os.close(slave_fd)
 
         if not launched:
-            self._status_label.setText("Failed to launch exec")
+            msg = f"Failed to exec: {last_error}" if last_error else "Failed to launch exec"
+            self._status_label.setText(msg)
+            self._status_label.setStyleSheet(f"color: {RED}; font-size: 11px;")
             return
 
         # Non-blocking read on master fd
