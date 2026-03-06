@@ -18,7 +18,8 @@ Manage containers, images, volumes and networks through a clean native GUI — n
 - **Terminal** — interactive shell inside any running container (`docker exec -it`)
 - **Stats** — live CPU, memory and network sparkline graphs
 - **Inspect** — JSON viewer with syntax highlighting for any resource
-- **Colima auto-start** — starts the Colima VM automatically on launch and stops it on quit
+- **Colima lifecycle** — auto-starts Colima on launch; on quit prompts to stop or keep Docker running
+- **Headless mode** — start or stop Docker from the terminal without opening the GUI (`-d` / `-s`)
 
 ---
 
@@ -71,7 +72,27 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
-DockPilot will automatically start Colima on launch and stop it when you quit.
+DockPilot starts Colima automatically on launch. When you quit, it asks whether to stop Docker or keep it running in the background.
+
+---
+
+## CLI flags
+
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `-d` | `--headless` | Start Colima in the background without opening the GUI |
+| `-s` | `--stop` | Stop Colima from the terminal |
+
+```sh
+# Start Docker in the background (no GUI)
+python3 main.py -d
+
+# Stop Docker
+python3 main.py -s
+
+# Open the GUI normally
+python3 main.py
+```
 
 ---
 
@@ -84,7 +105,7 @@ macOS → Colima VM → dockerd → Docker SDK (Python) → DockPilot GUI
 ```
 
 If Colima is not running when DockPilot opens, it starts it automatically.
-When DockPilot is closed, it stops the VM.
+When you close DockPilot, a dialog lets you choose to stop Docker or leave it running in the background.
 
 ---
 
@@ -109,13 +130,13 @@ dockpilot/
     ├── app.py                      QApplication + dark theme
     ├── docker_client.py            Docker SDK wrapper (auto-detects Colima socket)
     ├── workers/
-    │   ├── action_worker.py        Generic one-shot async worker
+    │   ├── action_worker.py        Generic one-shot async worker + FetchWorker (non-blocking polls)
     │   ├── colima_worker.py        Colima start/stop QThread workers
     │   ├── logs_worker.py          Streaming log worker
     │   ├── pull_worker.py          Image pull with progress
     │   └── stats_worker.py         Live container stats
     └── ui/
-        ├── main_window.py          Main window + sidebar + Colima lifecycle
+        ├── main_window.py          Main window + sidebar + Colima lifecycle + quit dialog
         ├── containers_panel.py     Container list and actions
         ├── compose_panel.py        Docker Compose project groups
         ├── images_panel.py         Image management
