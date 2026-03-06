@@ -19,3 +19,23 @@ class ActionWorker(QThread):
             self.success.emit(str(result) if result is not None else "")
         except Exception as e:
             self.error.emit(str(e))
+
+
+class FetchWorker(QThread):
+    """Runs a callable in a background thread and emits the result.
+
+    Prevents Docker API calls from blocking the main (UI) thread.
+    """
+
+    result = pyqtSignal(object)
+    error  = pyqtSignal(str)
+
+    def __init__(self, fn, parent=None):
+        super().__init__(parent)
+        self._fn = fn
+
+    def run(self):
+        try:
+            self.result.emit(self._fn())
+        except Exception as e:
+            self.error.emit(str(e))

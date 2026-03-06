@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor, QFont
 
 from src.docker_client import DockerClient
-from src.workers.action_worker import ActionWorker
+from src.workers.action_worker import ActionWorker, FetchWorker
 
 BG       = "#1e1e1e"
 SURFACE  = "#252526"
@@ -197,17 +197,27 @@ class ComposePanel(QWidget):
         timer.start(5000)
 
     def _refresh(self):
-        containers = self._docker.containers(all=True)
-        # Group by compose project label
-        projects: dict[str, list] = {}
-        standalone: list = []
-        for c in containers:
-            project = c.labels.get(LABEL_PROJECT)
-            if project:
-                projects.setdefault(project, []).append(c)
-            else:
-                standalone.append(c)
+        if getattr(self, "_fetch_worker", None) and self._fetch_worker.isRunning():
+            return
 
+        def fetch():
+            containers = self._docker.containers(all=True)
+            projects: dict[str, list] = {}
+            standalone: list = []
+            for c in containers:
+                project = c.labels.get(LABEL_PROJECT)
+                if project:
+                    projects.setdefault(project, []).append(c)
+                else:
+                    standalone.append(c)
+            return projects, standalone
+
+        self._fetch_worker = FetchWorker(fetch, self)
+        self._fetch_worker.result.connect(self._on_fetched)
+        self._fetch_worker.start()
+
+    def _on_fetched(self, data):
+        projects, standalone = data
         self._projects = projects
         self._standalone = standalone
         self._populate_tree(projects, standalone)

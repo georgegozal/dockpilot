@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor
 
 from src.docker_client import DockerClient
-from src.workers.action_worker import ActionWorker
+from src.workers.action_worker import ActionWorker, FetchWorker
 
 BG       = "#1e1e1e"
 SURFACE  = "#252526"
@@ -209,7 +209,15 @@ class ImagesPanel(QWidget):
         timer.start(10000)
 
     def _refresh(self):
-        self._images = self._docker.images(all=self._all_check.isChecked())
+        if getattr(self, "_fetch_worker", None) and self._fetch_worker.isRunning():
+            return
+        show_all = self._all_check.isChecked()
+        self._fetch_worker = FetchWorker(lambda: self._docker.images(all=show_all), self)
+        self._fetch_worker.result.connect(self._on_fetched)
+        self._fetch_worker.start()
+
+    def _on_fetched(self, images):
+        self._images = images
         self._populate_table()
 
     def _populate_table(self):

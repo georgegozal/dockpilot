@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QIcon
 
 from src.docker_client import DockerClient
-from src.workers.action_worker import ActionWorker
+from src.workers.action_worker import ActionWorker, FetchWorker
 
 # ── Palette ─────────────────────────────────────────────────────────────────
 BG       = "#1e1e1e"
@@ -300,13 +300,24 @@ class ContainersPanel(QWidget):
         self._refresh_timer.start(5000)
 
     def _refresh(self):
-        if not self._docker.is_connected:
-            # Try to reconnect silently
-            self._docker.ping()
+        if getattr(self, "_fetch_worker", None) and self._fetch_worker.isRunning():
+            return
         show_all = self._all_check.isChecked()
-        self._containers = self._docker.containers(all=show_all)
+
+        def fetch():
+            if not self._docker.is_connected:
+                self._docker.ping()
+            return self._docker.containers(all=show_all), self._docker.is_connected
+
+        self._fetch_worker = FetchWorker(fetch, self)
+        self._fetch_worker.result.connect(self._on_fetched)
+        self._fetch_worker.start()
+
+    def _on_fetched(self, data):
+        containers, connected = data
+        self._containers = containers
         self._populate_table()
-        if self._docker.is_connected:
+        if connected:
             self._refresh_label.setText("Auto-refresh: 5 s")
         else:
             self._refresh_label.setText("Docker not running — waiting…")

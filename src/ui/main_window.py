@@ -8,6 +8,7 @@ from PyQt6.QtGui import QFont
 import sys
 
 from src.docker_client import DockerClient
+from src.workers.action_worker import FetchWorker
 from src.workers.colima_worker import (
     colima_installed, colima_running,
     ColimaStartWorker, ColimaStopWorker,
@@ -247,14 +248,28 @@ class MainWindow(QMainWindow):
         timer.start(5000)
 
     def _check_docker_status(self):
+        # Skip if a status fetch is already in flight
+        if getattr(self, "_status_worker", None) and self._status_worker.isRunning():
+            return
         starting = isinstance(self._colima_worker, ColimaStartWorker)
-        ok = self._docker.ping()
-        version = ""
-        if ok:
-            v = self._docker.version()
-            if v:
-                engine = v.get("Components", [{}])[0].get("Version", "")
-                version = f"Docker {engine}" if engine else "Docker"
+
+        def fetch():
+            ok = self._docker.ping()
+            version = ""
+            if ok:
+                v = self._docker.version()
+                if v:
+                    engine = v.get("Components", [{}])[0].get("Version", "")
+                    version = f"Docker {engine}" if engine else "Docker"
+            return ok, version
+
+        self._status_worker = FetchWorker(fetch, self)
+        self._status_worker.result.connect(
+            lambda r: self._on_status_result(r[0], r[1], starting)
+        )
+        self._status_worker.start()
+
+    def _on_status_result(self, ok: bool, version: str, starting: bool):
         self._sidebar.set_docker_status(ok, version, starting=starting)
         if ok:
             self._status_bar.showMessage("Docker daemon connected", 3000)
