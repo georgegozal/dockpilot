@@ -315,7 +315,7 @@ class MainWindow(QMainWindow):
         self.close()
 
     def closeEvent(self, event):
-        if self._colima_started_by_us and not self._colima_stop_done:
+        if not self._colima_stop_done and colima_installed() and colima_running():
             msg = QMessageBox(self)
             msg.setWindowTitle("Quit DockPilot")
             msg.setText("Docker (Colima) is running.")
