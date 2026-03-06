@@ -316,9 +316,27 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self._colima_started_by_us and not self._colima_stop_done:
-            event.ignore()
-            self._stop_colima_and_close()
-            return
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Quit DockPilot")
+            msg.setText("Docker (Colima) is running.")
+            msg.setInformativeText(
+                "Stop Docker when quitting, or keep it running in the background?"
+            )
+            stop_btn   = msg.addButton("Stop Docker",  QMessageBox.ButtonRole.DestructiveRole)
+            keep_btn   = msg.addButton("Keep Running", QMessageBox.ButtonRole.AcceptRole)
+            cancel_btn = msg.addButton("Cancel",       QMessageBox.ButtonRole.RejectRole)
+            msg.setDefaultButton(keep_btn)
+            msg.exec()
+
+            clicked = msg.clickedButton()
+            if clicked == cancel_btn:
+                event.ignore()
+                return
+            elif clicked == stop_btn:
+                event.ignore()
+                self._stop_colima_and_close()
+                return
+            # keep_btn → close without stopping Colima
         super().closeEvent(event)
 
     # ------------------------------------------------------------------
