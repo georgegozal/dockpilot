@@ -15,14 +15,28 @@ class DockerClient:
     # ------------------------------------------------------------------
 
     def connect(self) -> bool:
-        try:
-            self._client = docker.from_env()
-            self._client.ping()
-            self._connected = True
-        except Exception:
-            self._connected = False
-            self._client = None
-        return self._connected
+        for base_url in self._socket_candidates():
+            try:
+                client = docker.DockerClient(base_url=base_url) if base_url else docker.from_env()
+                client.ping()
+                self._client = client
+                self._connected = True
+                return True
+            except Exception:
+                continue
+        self._connected = False
+        self._client = None
+        return False
+
+    @staticmethod
+    def _socket_candidates() -> list[str | None]:
+        import os
+        candidates: list[str | None] = [None]  # None = docker.from_env()
+        home = os.path.expanduser("~")
+        colima_sock = os.path.join(home, ".colima", "default", "docker.sock")
+        if os.path.exists(colima_sock):
+            candidates.insert(0, f"unix://{colima_sock}")
+        return candidates
 
     @property
     def is_connected(self) -> bool:
@@ -37,7 +51,8 @@ class DockerClient:
             return True
         except Exception:
             self._connected = False
-            return False
+            self._client = None
+            return self.connect()
 
     def version(self) -> dict | None:
         if not self._client:

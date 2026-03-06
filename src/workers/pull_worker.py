@@ -17,6 +17,11 @@ class PullWorker(QThread):
 
     def run(self):
         try:
+            if not self._docker.raw:
+                self._docker.connect()
+            if not self._docker.raw:
+                self.error.emit("Not connected to Docker daemon")
+                return
             for line in self._docker.raw.api.pull(
                 self._image, tag=self._tag, stream=True, decode=True
             ):

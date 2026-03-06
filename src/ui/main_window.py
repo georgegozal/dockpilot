@@ -1,45 +1,17 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QStackedWidget, QPushButton, QLabel, QFrame,
-    QSizePolicy, QStatusBar, QMessageBox, QSplitter,
+    QStatusBar, QMessageBox,
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QProcess
-from PyQt6.QtGui import QFont, QColor
-import shutil
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QFont
 import sys
 
 from src.docker_client import DockerClient
-
-
-# ── Docker daemon starter ────────────────────────────────────────────────────
-
-def _detect_docker_launcher() -> tuple[str, list[str]] | None:
-    """
-    Return (label, command_list) for the first available daemon launcher,
-    or None if nothing is found.
-
-    Priority: Colima → OrbStack → Rancher Desktop → Docker Desktop → Linux systemd
-    """
-    if sys.platform == "darwin":
-        if shutil.which("colima"):
-            return ("Colima", ["colima", "start"])
-        orb = "/Applications/OrbStack.app/Contents/MacOS/OrbStack"
-        if shutil.which("orb") or __import__("os").path.exists(orb):
-            return ("OrbStack", ["open", "-a", "OrbStack"])
-        rancher = "/Applications/Rancher Desktop.app"
-        if __import__("os").path.exists(rancher):
-            return ("Rancher Desktop", ["open", "-a", "Rancher Desktop"])
-        docker_app = "/Applications/Docker.app"
-        if __import__("os").path.exists(docker_app):
-            return ("Docker Desktop", ["open", "-a", "Docker"])
-        return None
-    else:
-        # Linux
-        if shutil.which("systemctl"):
-            return ("Docker (systemd)", ["sudo", "systemctl", "start", "docker"])
-        if shutil.which("service"):
-            return ("Docker (service)", ["sudo", "service", "docker", "start"])
-        return None
+from src.workers.colima_worker import (
+    colima_installed, colima_running,
+    ColimaStartWorker, ColimaStopWorker,
+)
 
 
 # ── Colours ────────────────────────────────────────────────────────────────
@@ -51,6 +23,7 @@ TEXT_DIM = "#888888"
 BORDER   = "#3e3e42"
 SUCCESS  = "#16c60c"
 ERROR    = "#f85149"
+YELLOW   = "#ffb900"
 
 
 class NavButton(QPushButton):
@@ -150,27 +123,6 @@ class Sidebar(QFrame):
 
         layout.addStretch()
 
-        # "Start Docker" button — shown only when daemon is not running
-        self._start_docker_btn = QPushButton("Start Docker")
-        self._start_docker_btn.setFixedHeight(30)
-        self._start_docker_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._start_docker_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {SUCCESS};
-                color: #000000;
-                border: none;
-                border-radius: 5px;
-                font-size: 12px;
-                font-weight: bold;
-                margin: 0 4px;
-            }}
-            QPushButton:hover {{ background: #12a50a; }}
-            QPushButton:disabled {{ background: #444444; color: #777777; }}
-        """)
-        self._start_docker_btn.setVisible(False)
-        self._start_docker_btn.clicked.connect(self._on_start_docker)
-        layout.addWidget(self._start_docker_btn)
-
         # Docker status indicator
         self._status_dot = QLabel("●")
         self._status_label = QLabel("Connecting…")
@@ -187,40 +139,21 @@ class Sidebar(QFrame):
 
         self._select(0)
 
-    def _on_start_docker(self):
-        launcher = _detect_docker_launcher()
-        if not launcher:
-            return
-        label, cmd = launcher
-        self._start_docker_btn.setEnabled(False)
-        self._start_docker_btn.setText(f"Starting {label}…")
-        proc = QProcess()
-        proc.startDetached(cmd[0], cmd[1:])
-        # Re-enable after 3 s; the status poller will detect when daemon is up
-        QTimer.singleShot(3000, lambda: (
-            self._start_docker_btn.setEnabled(True),
-            self._start_docker_btn.setText("Start Docker"),
-        ))
-
     def _select(self, index: int):
         for i, btn in enumerate(self._buttons):
             btn.setChecked(i == index)
         self.nav_changed.emit(index)
 
-    def set_docker_status(self, connected: bool, version: str = ""):
-        if connected:
+    def set_docker_status(self, connected: bool, version: str = "", starting: bool = False):
+        if starting:
+            self._status_dot.setStyleSheet(f"color: {YELLOW}; font-size: 10px;")
+            self._status_label.setText("Starting Colima…")
+        elif connected:
             self._status_dot.setStyleSheet(f"color: {SUCCESS}; font-size: 10px;")
             self._status_label.setText(version or "Connected")
-            self._start_docker_btn.setVisible(False)
         else:
             self._status_dot.setStyleSheet(f"color: {ERROR}; font-size: 10px;")
             self._status_label.setText("Not connected")
-            # Show "Start Docker" only if we know how to start something
-            has_launcher = _detect_docker_launcher() is not None
-            self._start_docker_btn.setVisible(has_launcher)
-            if has_launcher:
-                label = _detect_docker_launcher()[0]
-                self._start_docker_btn.setText(f"Start {label}")
 
 
 # ── Main Window ─────────────────────────────────────────────────────────────
@@ -230,12 +163,17 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._docker = docker
         self.setWindowTitle("DockPilot")
-        self.resize(1280, 800)
-        self.setMinimumSize(900, 600)
+        self.resize(800, 520)
+        self.setMinimumSize(480, 300)
         self.setStyleSheet(f"QMainWindow {{ background: {BG}; }}")
+
+        self._colima_started_by_us = False
+        self._colima_stop_done = False
+        self._colima_worker: ColimaStartWorker | ColimaStopWorker | None = None
 
         self._build_ui()
         self._start_status_poll()
+        self._maybe_start_colima()
 
     # ------------------------------------------------------------------
 
@@ -309,6 +247,7 @@ class MainWindow(QMainWindow):
         timer.start(5000)
 
     def _check_docker_status(self):
+        starting = isinstance(self._colima_worker, ColimaStartWorker)
         ok = self._docker.ping()
         version = ""
         if ok:
@@ -316,11 +255,58 @@ class MainWindow(QMainWindow):
             if v:
                 engine = v.get("Components", [{}])[0].get("Version", "")
                 version = f"Docker {engine}" if engine else "Docker"
-        self._sidebar.set_docker_status(ok, version)
+        self._sidebar.set_docker_status(ok, version, starting=starting)
         if ok:
             self._status_bar.showMessage("Docker daemon connected", 3000)
-        else:
-            self._status_bar.showMessage("Docker daemon not reachable — start Docker Desktop or daemon")
+        elif not starting:
+            self._status_bar.showMessage("Docker daemon not reachable")
+
+    # ------------------------------------------------------------------
+    # Colima lifecycle
+    # ------------------------------------------------------------------
+
+    def _maybe_start_colima(self):
+        """Auto-start Colima if it is installed but not yet running."""
+        if not colima_installed():
+            return
+        if colima_running():
+            return  # already up — don't touch it, don't stop it on exit
+
+        self._status_bar.showMessage("Starting Colima VM…")
+        w = ColimaStartWorker(self)
+        w.success.connect(self._on_colima_started)
+        w.error.connect(self._on_colima_error)
+        w.finished.connect(lambda: setattr(self, "_colima_worker", None))
+        self._colima_worker = w
+        w.start()
+
+    def _on_colima_started(self):
+        self._colima_started_by_us = True
+        self._status_bar.showMessage("Colima started", 3000)
+
+    def _on_colima_error(self, msg: str):
+        self._status_bar.showMessage(f"Colima error: {msg}", 8000)
+
+    def _stop_colima_and_close(self):
+        self._status_bar.showMessage("Stopping Colima VM…")
+        w = ColimaStopWorker(self)
+        w.finished.connect(self._on_colima_stop_done)
+        w.finished.connect(lambda: setattr(self, "_colima_worker", None))
+        self._colima_worker = w
+        w.start()
+
+    def _on_colima_stop_done(self):
+        self._colima_stop_done = True
+        self.close()
+
+    def closeEvent(self, event):
+        if self._colima_started_by_us and not self._colima_stop_done:
+            event.ignore()
+            self._stop_colima_and_close()
+            return
+        super().closeEvent(event)
+
+    # ------------------------------------------------------------------
 
     def show_status(self, msg: str, timeout: int = 4000):
         self._status_bar.showMessage(msg, timeout)
