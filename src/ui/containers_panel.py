@@ -3,7 +3,7 @@ from __future__ import annotations
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QPushButton, QLabel, QLineEdit, QHeaderView, QAbstractItemView,
-    QFrame, QToolButton, QMenu, QMessageBox, QCheckBox,
+    QFrame, QToolButton, QMenu, QMessageBox, QCheckBox, QApplication,
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QIcon
@@ -507,6 +507,8 @@ class ContainersPanel(QWidget):
         else:
             menu.addAction("Start",  lambda: self._action("start"))
 
+        menu.addSeparator()
+        menu.addAction("Copy ID", lambda: QApplication.clipboard().setText(cid[:12]))
         menu.addSeparator()
         menu.addAction("Logs",    self._open_logs)
         menu.addAction("Terminal",self._open_terminal)
