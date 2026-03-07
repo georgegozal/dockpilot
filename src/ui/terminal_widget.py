@@ -118,6 +118,15 @@ class TerminalView(QPlainTextEdit):
         self.setCursorWidth(2)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
 
+    def event(self, event):
+        # Intercept Tab/Backtab before Qt uses them for focus-chain navigation
+        from PyQt6.QtCore import QEvent
+        if event.type() == QEvent.Type.KeyPress:
+            if event.key() in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
+                self.keyPressEvent(event)
+                return True
+        return super().event(event)
+
     def keyPressEvent(self, event: QKeyEvent):
         self._tw._handle_key(event)
 
@@ -209,18 +218,33 @@ class ContainerTerminalWidget(QWidget):
 
         self._set_pty_size(self._rows, self._cols)
 
+        # Standard LS_COLORS for directory/file-type coloring
+        _LS_COLORS = (
+            "di=1;34:ln=1;36:so=1;35:pi=1;33:ex=1;32:"
+            "bd=1;33;40:cd=1;33;40:su=1;31:sg=1;31:"
+            "tw=1;32:ow=1;34"
+        )
+
         # Build env: inherit current env so docker can find its socket/config
         env = os.environ.copy()
-        env.setdefault("TERM", "xterm-256color")
+        env["TERM"]          = "xterm-256color"
+        env["COLORTERM"]     = "truecolor"
+        env["CLICOLOR"]      = "1"
+        env["CLICOLOR_FORCE"]= "1"
+        env["LS_COLORS"]     = _LS_COLORS
 
-        # Try bash first, then sh
+        # Try bash first, then ash, then sh
         launched = False
         last_error = ""
-        for shell in ["/bin/bash", "/bin/sh"]:
+        for shell in ["/bin/bash", "/bin/ash", "/bin/sh"]:
             try:
                 self._process = subprocess.Popen(
                     [docker_bin, "exec", "-it",
                      "-e", "TERM=xterm-256color",
+                     "-e", "COLORTERM=truecolor",
+                     "-e", "CLICOLOR=1",
+                     "-e", "CLICOLOR_FORCE=1",
+                     "-e", f"LS_COLORS={_LS_COLORS}",
                      self._container_id, shell],
                     stdin=slave_fd,
                     stdout=slave_fd,
