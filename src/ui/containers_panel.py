@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QPushButton, QLabel, QLineEdit, QHeaderView, QAbstractItemView,
     QFrame, QToolButton, QMenu, QMessageBox, QCheckBox, QApplication,
+    QInputDialog,
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QIcon
@@ -509,6 +510,7 @@ class ContainersPanel(QWidget):
 
         menu.addSeparator()
         menu.addAction("Copy ID", lambda: QApplication.clipboard().setText(cid[:12]))
+        menu.addAction("Set Memory Limit…", lambda: self._set_memory_limit(cid))
         menu.addSeparator()
         menu.addAction("Logs",    self._open_logs)
         menu.addAction("Terminal",self._open_terminal)
@@ -528,6 +530,25 @@ class ContainersPanel(QWidget):
 
     def _do_unpause(self, cid: str):
         w = ActionWorker(self._docker.unpause_container, cid)
+        w.success.connect(lambda _: self._refresh())
+        w.error.connect(self._show_error)
+        self._workers.append(w)
+        w.start()
+
+    def _set_memory_limit(self, cid: str):
+        c = self._docker.get_container(cid)
+        name = c.name if c else cid[:12]
+        value, ok = QInputDialog.getText(
+            self,
+            "Set Memory Limit",
+            f"Memory limit for '{name}':\n"
+            "(e.g. 256m, 512m, 1g, 2g  — enter 0 to remove limit)",
+            text="512m",
+        )
+        if not ok or not value.strip():
+            return
+        limit = value.strip().lower()
+        w = ActionWorker(self._docker.update_container, cid, limit)
         w.success.connect(lambda _: self._refresh())
         w.error.connect(self._show_error)
         self._workers.append(w)

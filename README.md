@@ -9,13 +9,14 @@ Manage containers, images, volumes and networks through a clean native GUI — n
 
 ## Features
 
-- **Containers** — list all containers with live status, start / stop / restart / pause / remove
+- **Containers** — list all containers with live status dot, ID, ports; start / stop / restart / pause / remove
+- **Memory limits** — right-click any container → Set Memory Limit to cap RAM usage (e.g. `256m`, `1g`, `2g`)
 - **Compose** — containers grouped by `docker-compose` project with per-group actions
 - **Images** — browse, pull, remove, prune dangling images
 - **Volumes** — create, inspect, remove, prune
 - **Networks** — create, inspect, remove, prune
 - **Logs** — streaming log viewer with search and follow mode
-- **Terminal** — interactive shell inside any running container with color output, Tab autocomplete, and block cursor
+- **Terminal** — interactive shell inside any running container with Tab autocomplete and block cursor
 - **Stats** — live CPU, memory and network sparkline graphs
 - **Inspect** — JSON viewer with syntax highlighting for any resource
 - **Colima lifecycle** — auto-starts Colima on launch; on quit prompts to stop or keep Docker running

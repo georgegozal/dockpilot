@@ -218,39 +218,18 @@ class ContainerTerminalWidget(QWidget):
 
         self._set_pty_size(self._rows, self._cols)
 
-        # Standard LS_COLORS for directory/file-type coloring
-        _LS_COLORS = (
-            "di=1;34:ln=1;36:so=1;35:pi=1;33:ex=1;32:"
-            "bd=1;33;40:cd=1;33;40:su=1;31:sg=1;31:"
-            "tw=1;32:ow=1;34"
-        )
-
         # Build env: inherit current env so docker can find its socket/config
         env = os.environ.copy()
-        env["TERM"]          = "xterm-256color"
-        env["COLORTERM"]     = "truecolor"
-        env["CLICOLOR"]      = "1"
-        env["CLICOLOR_FORCE"]= "1"
-        env["LS_COLORS"]     = _LS_COLORS
+        env["TERM"] = "xterm-256color"
 
-        # Try bash (interactive = sources /etc/bash.bashrc + ~/.bashrc color aliases)
-        # then ash/sh without -i (they don't have the same interactive sourcing)
         launched = False
         last_error = ""
-        for shell, shell_args in [
-            ("/bin/bash", ["-i"]),
-            ("/bin/ash",  []),
-            ("/bin/sh",   []),
-        ]:
+        for shell in ["/bin/bash", "/bin/ash", "/bin/sh"]:
             try:
                 self._process = subprocess.Popen(
                     [docker_bin, "exec", "-it",
                      "-e", "TERM=xterm-256color",
-                     "-e", "COLORTERM=truecolor",
-                     "-e", "CLICOLOR=1",
-                     "-e", "CLICOLOR_FORCE=1",
-                     "-e", f"LS_COLORS={_LS_COLORS}",
-                     self._container_id, shell] + shell_args,
+                     self._container_id, shell],
                     stdin=slave_fd,
                     stdout=slave_fd,
                     stderr=slave_fd,

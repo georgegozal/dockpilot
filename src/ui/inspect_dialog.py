@@ -51,7 +51,7 @@ class InspectDialog(QDialog):
     def __init__(self, title: str, data: dict, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.resize(800, 520)
+        self.resize(900, 600)
         self.setStyleSheet(f"background: {BG};")
         self._data = data
         self._json_text = json.dumps(data, indent=2, default=str)

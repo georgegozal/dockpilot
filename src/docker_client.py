@@ -120,6 +120,12 @@ class DockerClient:
     def inspect_container(self, container_id: str) -> dict:
         return self._client.api.inspect_container(container_id)
 
+    def update_container(self, container_id: str, mem_limit: str):
+        """Set memory limit (e.g. '512m', '1g'). memswap_limit matches mem_limit."""
+        self._client.api.update_container(container_id,
+                                          mem_limit=mem_limit,
+                                          memswap_limit=mem_limit)
+
     # ------------------------------------------------------------------
     # Images
     # ------------------------------------------------------------------
