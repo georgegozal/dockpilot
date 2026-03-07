@@ -233,10 +233,15 @@ class ContainerTerminalWidget(QWidget):
         env["CLICOLOR_FORCE"]= "1"
         env["LS_COLORS"]     = _LS_COLORS
 
-        # Try bash first, then ash, then sh
+        # Try bash (interactive = sources /etc/bash.bashrc + ~/.bashrc color aliases)
+        # then ash/sh without -i (they don't have the same interactive sourcing)
         launched = False
         last_error = ""
-        for shell in ["/bin/bash", "/bin/ash", "/bin/sh"]:
+        for shell, shell_args in [
+            ("/bin/bash", ["-i"]),
+            ("/bin/ash",  []),
+            ("/bin/sh",   []),
+        ]:
             try:
                 self._process = subprocess.Popen(
                     [docker_bin, "exec", "-it",
@@ -245,7 +250,7 @@ class ContainerTerminalWidget(QWidget):
                      "-e", "CLICOLOR=1",
                      "-e", "CLICOLOR_FORCE=1",
                      "-e", f"LS_COLORS={_LS_COLORS}",
-                     self._container_id, shell],
+                     self._container_id, shell] + shell_args,
                     stdin=slave_fd,
                     stdout=slave_fd,
                     stderr=slave_fd,

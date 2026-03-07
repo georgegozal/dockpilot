@@ -15,7 +15,7 @@ Manage containers, images, volumes and networks through a clean native GUI — n
 - **Volumes** — create, inspect, remove, prune
 - **Networks** — create, inspect, remove, prune
 - **Logs** — streaming log viewer with search and follow mode
-- **Terminal** — interactive shell inside any running container (`docker exec -it`)
+- **Terminal** — interactive shell inside any running container with color output, Tab autocomplete, and block cursor
 - **Stats** — live CPU, memory and network sparkline graphs
 - **Inspect** — JSON viewer with syntax highlighting for any resource
 - **Colima lifecycle** — auto-starts Colima on launch; on quit prompts to stop or keep Docker running
