@@ -67,21 +67,36 @@ class NavButton(QPushButton):
         self._update_style(checked)
 
     def _update_style(self, active: bool):
-        bg   = ACCENT if active else "transparent"
-        fg   = "#ffffff" if active else TEXT
-        hover = "#2a2d2e" if not active else ACCENT
-        self.setStyleSheet(f"""
-            QPushButton {{
-                background: {bg};
-                color: {fg};
-                border: none;
-                border-radius: 6px;
-                text-align: left;
-            }}
-            QPushButton:hover {{
-                background: {hover};
-            }}
-        """)
+        if active:
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    background: #2d2d30;
+                    color: #ffffff;
+                    border: none;
+                    border-left: 3px solid {ACCENT};
+                    border-radius: 0px;
+                    text-align: left;
+                    padding-left: 9px;
+                }}
+                QPushButton:hover {{
+                    background: #2d2d30;
+                }}
+            """)
+        else:
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    background: transparent;
+                    color: {TEXT};
+                    border: none;
+                    border-left: 3px solid transparent;
+                    border-radius: 0px;
+                    text-align: left;
+                    padding-left: 9px;
+                }}
+                QPushButton:hover {{
+                    background: #2a2d2e;
+                }}
+            """)
 
 
 class Sidebar(QFrame):
@@ -164,7 +179,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._docker = docker
         self.setWindowTitle("DockPilot")
-        self.resize(800, 520)
+        self.resize(900, 600)
         self.setMinimumSize(480, 300)
         self.setStyleSheet(f"QMainWindow {{ background: {BG}; }}")
 

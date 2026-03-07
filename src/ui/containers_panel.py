@@ -32,14 +32,13 @@ STATUS_COLORS = {
     "restarting": YELLOW,
 }
 
-COLS = ["", "Name", "Image", "Status", "Ports", "Created", "ID"]
+COLS = ["", "ID", "Name", "Ports", "Status", "Image"]
 COL_DOT    = 0
-COL_NAME   = 1
-COL_IMAGE  = 2
-COL_STATUS = 3
-COL_PORTS  = 4
-COL_CREATED = 5
-COL_ID     = 6
+COL_ID     = 1
+COL_NAME   = 2
+COL_PORTS  = 3
+COL_STATUS = 4
+COL_IMAGE  = 5
 
 
 def _fmt_ports(ports: dict) -> str:
@@ -237,19 +236,17 @@ class ContainersPanel(QWidget):
         self._table.doubleClicked.connect(self._on_double_click)
 
         hdr = self._table.horizontalHeader()
-        hdr.setSectionResizeMode(COL_DOT,     QHeaderView.ResizeMode.Fixed)
-        hdr.setSectionResizeMode(COL_NAME,    QHeaderView.ResizeMode.Interactive)
-        hdr.setSectionResizeMode(COL_IMAGE,   QHeaderView.ResizeMode.Interactive)
-        hdr.setSectionResizeMode(COL_STATUS,  QHeaderView.ResizeMode.Fixed)
-        hdr.setSectionResizeMode(COL_PORTS,   QHeaderView.ResizeMode.Stretch)
-        hdr.setSectionResizeMode(COL_CREATED, QHeaderView.ResizeMode.Fixed)
-        hdr.setSectionResizeMode(COL_ID,      QHeaderView.ResizeMode.Fixed)
+        hdr.setSectionResizeMode(COL_DOT,    QHeaderView.ResizeMode.Fixed)
+        hdr.setSectionResizeMode(COL_ID,     QHeaderView.ResizeMode.Fixed)
+        hdr.setSectionResizeMode(COL_NAME,   QHeaderView.ResizeMode.Interactive)
+        hdr.setSectionResizeMode(COL_PORTS,  QHeaderView.ResizeMode.Stretch)
+        hdr.setSectionResizeMode(COL_STATUS, QHeaderView.ResizeMode.Fixed)
+        hdr.setSectionResizeMode(COL_IMAGE,  QHeaderView.ResizeMode.Interactive)
         self._table.setColumnWidth(COL_DOT,     24)
-        self._table.setColumnWidth(COL_NAME,   180)
-        self._table.setColumnWidth(COL_IMAGE,  180)
-        self._table.setColumnWidth(COL_STATUS,  90)
-        self._table.setColumnWidth(COL_CREATED,120)
         self._table.setColumnWidth(COL_ID,     100)
+        self._table.setColumnWidth(COL_NAME,   160)
+        self._table.setColumnWidth(COL_STATUS,  90)
+        self._table.setColumnWidth(COL_IMAGE,  160)
 
         layout.addWidget(self._table, 1)
 
@@ -337,11 +334,10 @@ class ContainersPanel(QWidget):
             status = c.status
             color  = STATUS_COLORS.get(status, TEXT_DIM)
 
-            name   = c.name or ""
-            image  = c.image.tags[0] if c.image.tags else c.image.short_id
-            ports  = _fmt_ports(c.ports)
-            cid    = _short_id(c.id)
-            created = str(c.attrs.get("Created", ""))[:10]
+            name  = c.name or ""
+            image = c.image.tags[0] if c.image.tags else c.image.short_id
+            ports = _fmt_ports(c.ports)
+            cid   = _short_id(c.id)
 
             # Status dot
             dot = QTableWidgetItem("●")
@@ -356,14 +352,14 @@ class ContainersPanel(QWidget):
                 item.setData(Qt.ItemDataRole.UserRole, c.id)
                 return item
 
-            self._table.setItem(row, COL_NAME,    cell(name))
-            self._table.setItem(row, COL_IMAGE,   cell(_fmt_image(image)))
             status_item = cell(status)
             status_item.setForeground(QColor(color))
-            self._table.setItem(row, COL_STATUS,  status_item)
-            self._table.setItem(row, COL_PORTS,   cell(ports))
-            self._table.setItem(row, COL_CREATED, cell(created))
-            self._table.setItem(row, COL_ID,      cell(cid))
+
+            self._table.setItem(row, COL_ID,     cell(cid))
+            self._table.setItem(row, COL_NAME,   cell(name))
+            self._table.setItem(row, COL_PORTS,  cell(ports))
+            self._table.setItem(row, COL_STATUS, status_item)
+            self._table.setItem(row, COL_IMAGE,  cell(_fmt_image(image)))
 
             self._table.setRowHeight(row, 34)
 
