@@ -443,9 +443,11 @@ class ContainerTerminalWidget(QWidget):
         self._monitor.stop()
         if self._notifier:
             self._notifier.setEnabled(False)
-        exit_code = self._process.returncode if self._process else "?"
+        exit_code = self._process.returncode if self._process else 0
         self._status_label.setText(f"Exited (code {exit_code})")
         self._status_label.setStyleSheet(f"color: {RED}; font-size: 11px;")
+        # Close the dialog after a brief pause so the exit is visible
+        QTimer.singleShot(400, self.window().close)
 
     def _reconnect(self):
         self._cleanup()
