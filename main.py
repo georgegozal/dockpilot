@@ -10,7 +10,10 @@ if os.path.exists(_colima_sock) and "DOCKER_HOST" not in os.environ:
     os.environ["DOCKER_HOST"] = f"unix://{_colima_sock}"
 
 def _headless():
-    """Start Colima in the background without launching the GUI."""
+    """Start Colima in the background without launching the GUI (macOS only)."""
+    if sys.platform != "darwin":
+        print("Headless mode (-d) requires Colima and is only supported on macOS.", file=sys.stderr)
+        sys.exit(1)
     from src.workers.colima_worker import colima_installed, colima_running, _colima_bin
     import subprocess
 
@@ -33,7 +36,10 @@ def _headless():
 
 
 def _stop():
-    """Stop Colima from the command line."""
+    """Stop Colima from the command line (macOS only)."""
+    if sys.platform != "darwin":
+        print("Stop mode (-s) requires Colima and is only supported on macOS.", file=sys.stderr)
+        sys.exit(1)
     from src.workers.colima_worker import colima_installed, colima_running, _colima_bin
     import subprocess
 

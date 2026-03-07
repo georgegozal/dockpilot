@@ -151,7 +151,7 @@ class Sidebar(QFrame):
     def set_docker_status(self, connected: bool, version: str = "", starting: bool = False):
         if starting:
             self._status_dot.setStyleSheet(f"color: {YELLOW}; font-size: 10px;")
-            self._status_label.setText("Starting Colima…")
+            self._status_label.setText("Starting Docker…")
         elif connected:
             self._status_dot.setStyleSheet(f"color: {SUCCESS}; font-size: 10px;")
             self._status_label.setText(version or "Connected")
@@ -284,7 +284,9 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     def _maybe_start_colima(self):
-        """Auto-start Colima if it is installed but not yet running."""
+        """Auto-start Colima if it is installed but not yet running (macOS only)."""
+        if sys.platform != "darwin":
+            return
         if not colima_installed():
             return
         if colima_running():
@@ -318,7 +320,7 @@ class MainWindow(QMainWindow):
         self.close()
 
     def closeEvent(self, event):
-        if not self._colima_stop_done and colima_installed() and colima_running():
+        if sys.platform == "darwin" and not self._colima_stop_done and colima_installed() and colima_running():
             msg = QMessageBox(self)
             msg.setWindowTitle("Quit DockPilot")
             msg.setText("Docker (Colima) is running.")

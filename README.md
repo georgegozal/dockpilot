@@ -2,6 +2,7 @@
 
 A lightweight Docker Desktop replacement built with Python + PyQt6.
 Manage containers, images, volumes and networks through a clean native GUI — no Electron, no account required.
+Works on **macOS** (via Colima) and **Linux** (native Docker daemon).
 
 ![DockPilot](assets/screenshot.png)
 
@@ -19,45 +20,30 @@ Manage containers, images, volumes and networks through a clean native GUI — n
 - **Terminal** — interactive shell inside any running container with Tab autocomplete and block cursor
 - **Stats** — live CPU, memory and network sparkline graphs
 - **Inspect** — JSON viewer with syntax highlighting for any resource
-- **Colima lifecycle** — auto-starts Colima on launch; on quit prompts to stop or keep Docker running
-- **Headless mode** — start or stop Docker from the terminal without opening the GUI (`-d` / `-s`)
+- **Colima lifecycle** *(macOS)* — auto-starts Colima on launch; on quit prompts to stop or keep Docker running
+- **Headless mode** *(macOS)* — start or stop Colima from the terminal without opening the GUI (`-d` / `-s`)
+- **Linux support** — connects directly to the Docker daemon; no Colima required
 
 ---
 
 ## Requirements
 
-- macOS (tested on macOS 14+)
+### macOS
+- macOS 14+
 - Python 3.10+
 - [Colima](https://github.com/abiosoft/colima) — lightweight Docker VM (replaces Docker Desktop)
-- Docker CLI
+- Docker CLI (`brew install colima docker`)
+
+### Linux
+- Python 3.10+
+- Docker Engine installed and running (`sudo apt install docker.io` or equivalent)
+- Your user in the `docker` group: `sudo usermod -aG docker $USER`
 
 ---
 
 ## Setup
 
-### 1. Install dependencies
-
-```sh
-brew install colima docker
-```
-
-### 2. Configure your shell
-
-Add the Docker socket to your shell so the `docker` CLI and `docker compose` work in every terminal:
-
-```sh
-echo 'export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-For bash users:
-
-```sh
-echo 'export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### 3. Clone and install Python dependencies
+### Clone and install Python dependencies
 
 ```sh
 git clone https://github.com/yourusername/dockpilot.git
@@ -67,13 +53,37 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run
+### macOS
 
-```sh
-python3 main.py
-```
+1. Install Colima and Docker CLI:
+   ```sh
+   brew install colima docker
+   ```
+2. *(Optional)* Add the Docker socket to your shell so the `docker` CLI works in every terminal:
+   ```sh
+   echo 'export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+3. Run DockPilot — it starts Colima automatically on launch. When you quit, it asks whether to stop Docker or keep it running in the background:
+   ```sh
+   python3 main.py
+   ```
 
-DockPilot starts Colima automatically on launch. When you quit, it asks whether to stop Docker or keep it running in the background.
+### Linux
+
+1. Install Docker Engine (if not already installed):
+   ```sh
+   sudo apt install docker.io     # Debian / Ubuntu
+   # or: sudo dnf install docker  # Fedora / RHEL
+   ```
+2. Add your user to the `docker` group (log out and back in after):
+   ```sh
+   sudo usermod -aG docker $USER
+   ```
+3. Run DockPilot — it connects to the running Docker daemon automatically:
+   ```sh
+   python3 main.py
+   ```
 
 ---
 
