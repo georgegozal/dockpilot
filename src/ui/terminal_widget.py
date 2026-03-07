@@ -379,6 +379,8 @@ class ContainerTerminalWidget(QWidget):
             doc_lines.append(line.rstrip())
 
         # We'll render with colours using setHtml
+        cur_x = screen.cursor.x
+        cur_y = screen.cursor.y
         html_lines = []
         for y in range(screen.lines):
             line_chars = screen.buffer[y]
@@ -390,6 +392,9 @@ class ContainerTerminalWidget(QWidget):
                 bg   = _resolve_color(char.bg, BG)
                 bold = char.bold
                 ul   = char.underscore
+                # Draw block cursor by inverting colors at cursor position
+                if x == cur_x and y == cur_y and not self._dead:
+                    fg, bg = BG, "#e0e0e0"
                 style = f"color:{fg};background:{bg};"
                 if bold:
                     style += "font-weight:bold;"
