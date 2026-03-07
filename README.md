@@ -59,10 +59,15 @@ pip install -r requirements.txt
    ```sh
    brew install colima docker
    ```
-2. *(Optional)* Add the Docker socket to your shell so the `docker` CLI works in every terminal:
+2. *(Optional)* Add the Docker socket to your shell config so the `docker` CLI works in every new terminal.
+
+   **zsh** (default on macOS):
    ```sh
-   echo 'export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"' >> ~/.zshrc
-   source ~/.zshrc
+   echo 'export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"' >> ~/.zshrc && source ~/.zshrc
+   ```
+   **bash:**
+   ```sh
+   echo 'export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"' >> ~/.bashrc && source ~/.bashrc
    ```
 3. Run DockPilot — it starts Colima automatically on launch. When you quit, it asks whether to stop Docker or keep it running in the background:
    ```sh
@@ -88,6 +93,8 @@ pip install -r requirements.txt
 ---
 
 ## CLI flags
+
+> These flags require Colima and are **macOS only**. They have no effect on Linux.
 
 | Flag | Alias | Description |
 |------|-------|-------------|
@@ -137,17 +144,19 @@ When you close DockPilot, a dialog lets you choose to stop Docker or leave it ru
 dockpilot/
 ├── main.py                         Entry point, sets DOCKER_HOST env var
 ├── requirements.txt
+├── assets/
+│   └── screenshot.png
 └── src/
     ├── app.py                      QApplication + dark theme
     ├── docker_client.py            Docker SDK wrapper (auto-detects Colima socket)
     ├── workers/
     │   ├── action_worker.py        Generic one-shot async worker + FetchWorker (non-blocking polls)
-    │   ├── colima_worker.py        Colima start/stop QThread workers
+    │   ├── colima_worker.py        Colima start/stop QThread workers (macOS only)
     │   ├── logs_worker.py          Streaming log worker
     │   ├── pull_worker.py          Image pull with progress
     │   └── stats_worker.py         Live container stats
     └── ui/
-        ├── main_window.py          Main window + sidebar + Colima lifecycle + quit dialog
+        ├── main_window.py          Main window + sidebar + Colima lifecycle/quit dialog (macOS only)
         ├── containers_panel.py     Container list and actions
         ├── compose_panel.py        Docker Compose project groups
         ├── images_panel.py         Image management
