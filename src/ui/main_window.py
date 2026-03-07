@@ -42,20 +42,19 @@ class NavButton(QPushButton):
         layout.setContentsMargins(12, 0, 12, 0)
         layout.setSpacing(10)
 
-        icon_lbl = QLabel(self._icon_text)
-        # Use platform-appropriate emoji font to avoid Qt font-fallback delay
         import sys
         emoji_font = "Apple Color Emoji" if sys.platform == "darwin" else "Segoe UI Emoji"
-        icon_lbl.setFont(QFont(emoji_font, 16))
-        icon_lbl.setFixedWidth(24)
-        icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-        layout.addWidget(icon_lbl)
 
-        text_lbl = QLabel(self._label_text)
-        f = QFont("SF Pro Display, Helvetica Neue, Arial", 13)
-        text_lbl.setFont(f)
-        text_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-        layout.addWidget(text_lbl)
+        self._icon_lbl = QLabel(self._icon_text)
+        self._icon_lbl.setFont(QFont(emoji_font, 16))
+        self._icon_lbl.setFixedWidth(24)
+        self._icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        layout.addWidget(self._icon_lbl)
+
+        self._text_lbl = QLabel(self._label_text)
+        self._text_lbl.setFont(QFont("SF Pro Display, Helvetica Neue, Arial", 13))
+        self._text_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        layout.addWidget(self._text_lbl)
         layout.addStretch()
 
         self.setFixedHeight(44)
@@ -67,36 +66,25 @@ class NavButton(QPushButton):
         self._update_style(checked)
 
     def _update_style(self, active: bool):
-        if active:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background: #2d2d30;
-                    color: #ffffff;
-                    border: none;
-                    border-left: 3px solid {ACCENT};
-                    border-radius: 0px;
-                    text-align: left;
-                    padding-left: 9px;
-                }}
-                QPushButton:hover {{
-                    background: #2d2d30;
-                }}
-            """)
-        else:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background: transparent;
-                    color: {TEXT};
-                    border: none;
-                    border-left: 3px solid transparent;
-                    border-radius: 0px;
-                    text-align: left;
-                    padding-left: 9px;
-                }}
-                QPushButton:hover {{
-                    background: #2a2d2e;
-                }}
-            """)
+        fg = "#ffffff" if active else TEXT
+        bg = "#094771" if active else "transparent"
+        hover = "#0e5a8a" if active else "#2a2d2e"
+        # Child labels must be transparent so the button background shows through
+        lbl_style = f"background: transparent; color: {fg}; border: none;"
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background: {bg};
+                border: none;
+                border-radius: 4px;
+                text-align: left;
+            }}
+            QPushButton:hover {{
+                background: {hover};
+            }}
+        """)
+        if hasattr(self, "_icon_lbl"):
+            self._icon_lbl.setStyleSheet(lbl_style)
+            self._text_lbl.setStyleSheet(lbl_style)
 
 
 class Sidebar(QFrame):
