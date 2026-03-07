@@ -52,7 +52,7 @@ class NavButton(QPushButton):
         layout.addWidget(self._icon_lbl)
 
         self._text_lbl = QLabel(self._label_text)
-        self._text_lbl.setFont(QFont("SF Pro Display, Helvetica Neue, Arial", 13))
+        self._text_lbl.setFont(QFont("Helvetica Neue", 13))
         self._text_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(self._text_lbl)
         layout.addStretch()
