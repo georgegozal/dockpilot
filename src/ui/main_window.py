@@ -160,25 +160,26 @@ class Sidebar(QFrame):
         status_row.addStretch()
         layout.addLayout(status_row)
 
-        # Preferences button
-        prefs_btn = QPushButton("⚙  Preferences")
-        prefs_btn.setFixedHeight(30)
-        prefs_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        prefs_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                color: {TEXT_DIM};
-                border: none;
-                border-radius: 4px;
-                text-align: left;
-                padding: 0 12px;
-                font-size: 11px;
-            }}
-            QPushButton:hover {{ background: #2a2d2e; color: {TEXT}; }}
-        """)
-        prefs_btn.clicked.connect(self._open_preferences)
-        layout.addWidget(prefs_btn)
-        layout.addSpacing(4)
+        # Preferences button — Linux only (macOS has no configurable options yet)
+        if sys.platform != "darwin":
+            prefs_btn = QPushButton("⚙  Preferences")
+            prefs_btn.setFixedHeight(30)
+            prefs_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            prefs_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: transparent;
+                    color: {TEXT_DIM};
+                    border: none;
+                    border-radius: 4px;
+                    text-align: left;
+                    padding: 0 12px;
+                    font-size: 11px;
+                }}
+                QPushButton:hover {{ background: #2a2d2e; color: {TEXT}; }}
+            """)
+            prefs_btn.clicked.connect(self._open_preferences)
+            layout.addWidget(prefs_btn)
+            layout.addSpacing(4)
 
         self._select(0)
 
