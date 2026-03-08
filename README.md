@@ -40,14 +40,14 @@ brew install colima docker
 
 Then run the installer:
 ```sh
-curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/georgegozal/dockpilot/main/install.sh | bash
 ```
 
 ### Linux
 
 Make sure Docker Engine is installed and your user is in the `docker` group (see [Requirements](#requirements) below), then:
 ```sh
-curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/georgegozal/dockpilot/main/install.sh | bash
 ```
 
 The installer creates a `dockpilot` command in `~/.local/bin/` and (on Linux) a `.desktop` entry so DockPilot appears in your application menu.
@@ -56,13 +56,13 @@ The installer creates a `dockpilot` command in `~/.local/bin/` and (on Linux) a 
 
 Re-run the installer at any time — it pulls the latest code and reinstalls dependencies:
 ```sh
-curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/georgegozal/dockpilot/main/install.sh | bash
 ```
 
 ### Uninstalling
 
 ```sh
-curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/uninstall.sh | bash
+curl -sSL https://raw.githubusercontent.com/georgegozal/dockpilot/main/uninstall.sh | bash
 ```
 
 ---
@@ -89,7 +89,7 @@ For contributing or running from source without the installer.
 ### Clone and install Python dependencies
 
 ```sh
-git clone https://github.com/yourusername/dockpilot.git
+git clone https://github.com/georgegozal/dockpilot.git
 cd dockpilot
 python3 -m venv .venv
 source .venv/bin/activate

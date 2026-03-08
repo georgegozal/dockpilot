@@ -3,7 +3,7 @@
 # Usage: bash install.sh
 set -euo pipefail
 
-REPO_URL="https://github.com/yourusername/dockpilot.git"
+REPO_URL="https://github.com/georgegozal/dockpilot.git"
 INSTALL_DIR="$HOME/.local/share/dockpilot"
 BIN_DIR="$HOME/.local/bin"
 LAUNCHER="$BIN_DIR/dockpilot"
