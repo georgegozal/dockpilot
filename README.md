@@ -23,6 +23,7 @@ Works on **macOS** (via Colima) and **Linux** (native Docker daemon).
 - **Colima lifecycle** *(macOS)* — auto-starts Colima on launch; on quit prompts to stop or keep Docker running
 - **Headless mode** *(macOS)* — start or stop Colima from the terminal without opening the GUI (`-d` / `-s`)
 - **Linux support** — connects directly to the Docker daemon; no Colima required
+- **Icon themes** *(Linux)* — Preferences button in sidebar lets you pick any installed XDG icon theme (Papirus, Adwaita, Breeze, Numix, etc.); sidebar uses system icons automatically on Linux, emoji on macOS
 
 ---
 
@@ -166,6 +167,7 @@ dockpilot/
         ├── terminal_widget.py      Interactive container terminal
         ├── stats_widget.py         Live stats graphs
         ├── inspect_dialog.py       JSON inspector
+        ├── preferences_dialog.py   Preferences dialog (icon theme — Linux only)
         └── pull_dialog.py          Pull image dialog
 ```
 
