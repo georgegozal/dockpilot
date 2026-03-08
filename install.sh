@@ -103,12 +103,59 @@ DESKTOP_EOF
   info ".desktop file created: $DESKTOP_FILE"
 fi
 
-# ── macOS: PATH hint ──────────────────────────────────────────────────────────
+# ── macOS: PATH + DOCKER_HOST setup ──────────────────────────────────────────
 if [[ "$PLATFORM" == "macos" ]]; then
+  # Detect the user's default shell config file
+  _detect_shell_rc() {
+    local shell_name
+    shell_name="$(basename "${SHELL:-bash}")"
+    case "$shell_name" in
+      zsh)  echo "$HOME/.zshrc" ;;
+      bash) echo "$HOME/.bashrc" ;;
+      fish) echo "$HOME/.config/fish/config.fish" ;;
+      *)    echo "$HOME/.profile" ;;
+    esac
+  }
+  SHELL_RC="$(_detect_shell_rc)"
+
+  # ── PATH ──────────────────────────────────────────────────────────────────
   if ! echo "$PATH" | tr ':' '\n' | grep -qx "$BIN_DIR"; then
+    PATH_LINE="export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo ""
     warn "$BIN_DIR is not in your PATH."
-    warn "Add the following line to your ~/.zshrc (or ~/.bashrc):"
-    warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    read -r -p "    Add it to $SHELL_RC automatically? [Y/n] " yn
+    if [[ "${yn,,}" != "n" ]]; then
+      echo "" >> "$SHELL_RC"
+      echo "# Added by DockPilot installer" >> "$SHELL_RC"
+      echo "$PATH_LINE" >> "$SHELL_RC"
+      info "Added PATH entry to $SHELL_RC"
+      export PATH="$BIN_DIR:$PATH"
+    else
+      warn "Skipped. Add this line manually to your shell config:"
+      warn "  $PATH_LINE"
+    fi
+  fi
+
+  # ── DOCKER_HOST (Colima socket) ───────────────────────────────────────────
+  COLIMA_SOCK="\${HOME}/.colima/default/docker.sock"
+  DOCKER_HOST_LINE="export DOCKER_HOST=\"unix://$COLIMA_SOCK\""
+
+  if ! grep -qF "DOCKER_HOST" "${SHELL_RC}" 2>/dev/null; then
+    echo ""
+    info "Colima uses a custom Docker socket. Without DOCKER_HOST set,"
+    info "the 'docker' CLI won't work in new terminals."
+    read -r -p "    Add DOCKER_HOST to $SHELL_RC automatically? [Y/n] " yn
+    if [[ "${yn,,}" != "n" ]]; then
+      echo "" >> "$SHELL_RC"
+      echo "# Colima Docker socket — added by DockPilot installer" >> "$SHELL_RC"
+      echo "$DOCKER_HOST_LINE" >> "$SHELL_RC"
+      info "Added DOCKER_HOST to $SHELL_RC"
+    else
+      warn "Skipped. Add this line manually if you want 'docker' CLI to work:"
+      warn "  $DOCKER_HOST_LINE"
+    fi
+  else
+    info "DOCKER_HOST already set in $SHELL_RC — skipping."
   fi
 fi
 
