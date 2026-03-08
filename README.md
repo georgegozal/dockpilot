@@ -27,6 +27,46 @@ Works on **macOS** (via Colima) and **Linux** (native Docker daemon).
 
 ---
 
+## Installation
+
+The fastest way to install DockPilot — no manual virtualenv, no `python3 main.py`.
+
+### macOS
+
+First install Colima and the Docker CLI if you haven't already:
+```sh
+brew install colima docker
+```
+
+Then run the installer:
+```sh
+curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/install.sh | bash
+```
+
+### Linux
+
+Make sure Docker Engine is installed and your user is in the `docker` group (see [Requirements](#requirements) below), then:
+```sh
+curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/install.sh | bash
+```
+
+The installer creates a `dockpilot` command in `~/.local/bin/` and (on Linux) a `.desktop` entry so DockPilot appears in your application menu.
+
+### Updating
+
+Re-run the installer at any time — it pulls the latest code and reinstalls dependencies:
+```sh
+curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/install.sh | bash
+```
+
+### Uninstalling
+
+```sh
+curl -sSL https://raw.githubusercontent.com/yourusername/dockpilot/main/uninstall.sh | bash
+```
+
+---
+
 ## Requirements
 
 ### macOS
@@ -42,7 +82,9 @@ Works on **macOS** (via Colima) and **Linux** (native Docker daemon).
 
 ---
 
-## Setup
+## Development setup
+
+For contributing or running from source without the installer.
 
 ### Clone and install Python dependencies
 
@@ -145,6 +187,8 @@ When you close DockPilot, a dialog lets you choose to stop Docker or leave it ru
 dockpilot/
 ├── main.py                         Entry point, sets DOCKER_HOST env var
 ├── requirements.txt
+├── install.sh                      One-script installer (macOS + Linux)
+├── uninstall.sh                    Removes install dir, launcher, desktop file
 ├── assets/
 │   └── screenshot.png
 └── src/
