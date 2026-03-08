@@ -3,8 +3,8 @@ from PyQt6.QtWidgets import (
     QStackedWidget, QPushButton, QLabel, QFrame,
     QStatusBar, QMessageBox,
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSettings
+from PyQt6.QtGui import QFont, QPixmap, QIcon
 import sys
 
 from src.docker_client import DockerClient
@@ -28,13 +28,15 @@ YELLOW   = "#ffb900"
 
 
 class NavButton(QPushButton):
-    """Sidebar navigation item."""
+    """Sidebar navigation item — supports emoji or system icon mode."""
 
-    def __init__(self, icon: str, label: str, parent=None):
+    def __init__(self, icon_emoji: str, icon_system: str, label: str, parent=None):
         super().__init__(parent)
         self.setCheckable(True)
-        self._icon_text = icon
-        self._label_text = label
+        self._icon_emoji  = icon_emoji
+        self._icon_system = icon_system
+        self._label_text  = label
+        self._using_system = False
         self._build()
 
     def _build(self):
@@ -42,12 +44,9 @@ class NavButton(QPushButton):
         layout.setContentsMargins(12, 0, 12, 0)
         layout.setSpacing(10)
 
-        import sys
-        emoji_font = "Apple Color Emoji" if sys.platform == "darwin" else "Segoe UI Emoji"
-
-        self._icon_lbl = QLabel(self._icon_text)
-        self._icon_lbl.setFont(QFont(emoji_font, 16))
-        self._icon_lbl.setFixedWidth(24)
+        self._icon_lbl = QLabel()
+        self._icon_lbl.setFixedSize(24, 24)
+        self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(self._icon_lbl)
 
@@ -59,18 +58,35 @@ class NavButton(QPushButton):
 
         self.setFixedHeight(44)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._apply_icon()
         self._update_style(False)
+
+    def _apply_icon(self):
+        if sys.platform != "darwin":
+            # Linux: use XDG system icon, fall back to emoji text
+            icon = QIcon.fromTheme(self._icon_system)
+            if not icon.isNull():
+                self._icon_lbl.setPixmap(icon.pixmap(20, 20))
+                self._using_system = True
+                return
+        # macOS (always) or Linux fallback: emoji
+        emoji_font = "Apple Color Emoji" if sys.platform == "darwin" else "Segoe UI Emoji"
+        self._icon_lbl.setFont(QFont(emoji_font, 16))
+        self._icon_lbl.setText(self._icon_emoji)
+        self._using_system = False
+
+    def refresh_icon(self):
+        self._apply_icon()
+        self._update_style(self.isChecked())
 
     def setChecked(self, checked: bool):
         super().setChecked(checked)
         self._update_style(checked)
 
     def _update_style(self, active: bool):
-        fg = "#ffffff" if active else TEXT
-        bg = "#094771" if active else "transparent"
+        fg    = "#ffffff" if active else TEXT
+        bg    = "#094771" if active else "transparent"
         hover = "#0e5a8a" if active else "#2a2d2e"
-        # Child labels must be transparent so the button background shows through
-        lbl_style = f"background: transparent; color: {fg}; border: none;"
         self.setStyleSheet(f"""
             QPushButton {{
                 background: {bg};
@@ -78,24 +94,27 @@ class NavButton(QPushButton):
                 border-radius: 4px;
                 text-align: left;
             }}
-            QPushButton:hover {{
-                background: {hover};
-            }}
+            QPushButton:hover {{ background: {hover}; }}
         """)
         if hasattr(self, "_icon_lbl"):
-            self._icon_lbl.setStyleSheet(lbl_style)
-            self._text_lbl.setStyleSheet(lbl_style)
+            # System icon pixmap: no colour styling needed, just transparency
+            icon_style = "background: transparent; border: none;"
+            if not self._using_system:
+                icon_style += f" color: {fg};"
+            self._icon_lbl.setStyleSheet(icon_style)
+            self._text_lbl.setStyleSheet(f"background: transparent; color: {fg}; border: none;")
 
 
 class Sidebar(QFrame):
     nav_changed = pyqtSignal(int)
 
+    # (emoji, xdg-icon-name, label, index)
     ITEMS = [
-        ("🐳", "Containers",  0),
-        ("📦", "Compose",     1),
-        ("💿", "Images",      2),
-        ("💾", "Volumes",     3),
-        ("🌐", "Networks",    4),
+        ("🐳", "utilities-terminal",  "Containers", 0),
+        ("📦", "package-x-generic",   "Compose",    1),
+        ("💿", "drive-optical",       "Images",     2),
+        ("💾", "drive-harddisk",      "Volumes",    3),
+        ("🌐", "network-wired",       "Networks",   4),
     ]
 
     def __init__(self, parent=None):
@@ -119,8 +138,8 @@ class Sidebar(QFrame):
         layout.addSpacing(6)
 
         self._buttons: list[NavButton] = []
-        for icon, label, idx in self.ITEMS:
-            btn = NavButton(icon, label)
+        for icon_e, icon_s, label, idx in self.ITEMS:
+            btn = NavButton(icon_e, icon_s, label)
             btn.clicked.connect(lambda _, i=idx: self._select(i))
             layout.addWidget(btn)
             self._buttons.append(btn)
@@ -141,12 +160,46 @@ class Sidebar(QFrame):
         status_row.addStretch()
         layout.addLayout(status_row)
 
+        # Preferences button
+        prefs_btn = QPushButton("⚙  Preferences")
+        prefs_btn.setFixedHeight(30)
+        prefs_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        prefs_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {TEXT_DIM};
+                border: none;
+                border-radius: 4px;
+                text-align: left;
+                padding: 0 12px;
+                font-size: 11px;
+            }}
+            QPushButton:hover {{ background: #2a2d2e; color: {TEXT}; }}
+        """)
+        prefs_btn.clicked.connect(self._open_preferences)
+        layout.addWidget(prefs_btn)
+        layout.addSpacing(4)
+
         self._select(0)
 
     def _select(self, index: int):
         for i, btn in enumerate(self._buttons):
             btn.setChecked(i == index)
         self.nav_changed.emit(index)
+
+    def refresh_icons(self):
+        """Re-apply icon theme on all nav buttons (called after preferences change)."""
+        settings = QSettings("DockPilot", "DockPilot")
+        theme = settings.value("icon_theme", "")
+        if theme:
+            QIcon.setThemeName(theme)
+        for btn in self._buttons:
+            btn.refresh_icon()
+
+    def _open_preferences(self):
+        from src.ui.preferences_dialog import PreferencesDialog
+        dlg = PreferencesDialog(self)
+        dlg.exec()
 
     def set_docker_status(self, connected: bool, version: str = "", starting: bool = False):
         if starting:
@@ -174,6 +227,12 @@ class MainWindow(QMainWindow):
         self._colima_started_by_us = False
         self._colima_stop_done = False
         self._colima_worker: ColimaStartWorker | ColimaStopWorker | None = None
+
+        # Apply saved XDG icon theme before building UI (Linux only)
+        if sys.platform != "darwin":
+            _t = QSettings("DockPilot", "DockPilot").value("icon_theme", "")
+            if _t:
+                QIcon.setThemeName(_t)
 
         self._build_ui()
         self._start_status_poll()
