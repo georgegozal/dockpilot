@@ -61,7 +61,41 @@ def _stop():
         sys.exit(r.returncode)
 
 
+_HELP = """\
+DockPilot — lightweight Docker Desktop replacement
+
+Usage:
+  dockpilot [options]
+
+Options:
+  -h, --help       Show this help message and exit
+  -u, --upgrade    Update DockPilot to the latest version
+  -d, --headless   Start Docker (Colima) in the background, no GUI  [macOS only]
+  -s, --stop       Stop Docker (Colima) from the terminal            [macOS only]
+
+With no options, DockPilot opens the GUI.
+"""
+
+
+def _upgrade():
+    """Pull latest code and reinstall dependencies via install.sh."""
+    import subprocess
+    install_sh = os.path.join(os.path.dirname(__file__), "install.sh")
+    if not os.path.exists(install_sh):
+        print("install.sh not found. Re-run the installer:", file=sys.stderr)
+        print("  curl -sSL https://raw.githubusercontent.com/georgegozal/dockpilot/main/install.sh | bash",
+              file=sys.stderr)
+        sys.exit(1)
+    r = subprocess.run(["bash", install_sh])
+    sys.exit(r.returncode)
+
+
 def main():
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print(_HELP, end="")
+        sys.exit(0)
+    if "-u" in sys.argv or "--upgrade" in sys.argv:
+        _upgrade()
     if "-d" in sys.argv or "--headless" in sys.argv:
         _headless()
     if "-s" in sys.argv or "--stop" in sys.argv:
