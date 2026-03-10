@@ -137,22 +137,19 @@ pip install -r requirements.txt
 
 ## CLI flags
 
-> These flags require Colima and are **macOS only**. They have no effect on Linux.
-
 | Flag | Alias | Description |
 |------|-------|-------------|
-| `-d` | `--headless` | Start Colima in the background without opening the GUI |
-| `-s` | `--stop` | Stop Colima from the terminal |
+| `-h` | `--help` | Show usage and available options |
+| `-u` | `--upgrade` | Update DockPilot to the latest version |
+| `-d` | `--headless` | Start Docker (Colima) in the background, no GUI *(macOS only)* |
+| `-s` | `--stop` | Stop Docker (Colima) from the terminal *(macOS only)* |
 
 ```sh
-# Start Docker in the background (no GUI)
-python3 main.py -d
-
-# Stop Docker
-python3 main.py -s
-
-# Open the GUI normally
-python3 main.py
+dockpilot --help
+dockpilot --upgrade
+dockpilot -d   # macOS: start Docker in background
+dockpilot -s   # macOS: stop Docker
+dockpilot      # open the GUI
 ```
 
 ---
