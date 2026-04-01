@@ -9,8 +9,20 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QIcon
 
+import docker.errors
+
 from src.docker_client import DockerClient
 from src.workers.action_worker import ActionWorker, FetchWorker
+
+
+def _image_name(c) -> str:
+    """Return a display name for a container's image, tolerating API errors."""
+    try:
+        img = c.image
+        return img.tags[0] if img.tags else img.short_id
+    except docker.errors.APIError:
+        raw = c.attrs.get("Config", {}).get("Image") or c.attrs.get("Image", "")
+        return raw or "<unknown>"
 
 # ── Palette ─────────────────────────────────────────────────────────────────
 BG       = "#1e1e1e"
@@ -325,7 +337,7 @@ class ContainersPanel(QWidget):
         rows = []
         for c in self._containers:
             name = c.name or ""
-            image = c.image.tags[0] if c.image.tags else c.image.short_id
+            image = _image_name(c)
             if flt and flt not in name.lower() and flt not in image.lower():
                 continue
             rows.append(c)
@@ -336,7 +348,7 @@ class ContainersPanel(QWidget):
             color  = STATUS_COLORS.get(status, TEXT_DIM)
 
             name  = c.name or ""
-            image = c.image.tags[0] if c.image.tags else c.image.short_id
+            image = _image_name(c)
             ports = _fmt_ports(c.ports)
             cid   = _short_id(c.id)
 
