@@ -136,6 +136,9 @@ class DockerClient:
             restart_policy={"Name": policy, "MaximumRetryCount": max_retry_count},
         )
 
+    def prune_containers(self) -> dict:
+        return self._client.containers.prune()
+
     # ------------------------------------------------------------------
     # Images
     # ------------------------------------------------------------------

@@ -66,6 +66,7 @@ DockPilot — lightweight Docker Desktop replacement
 
 Usage:
   dockpilot [options]
+  dockpilot <command> [args]
 
 Options:
   -h, --help       Show this help message and exit
@@ -73,8 +74,29 @@ Options:
   -d, --headless   Start Docker (Colima) in the background, no GUI  [macOS only]
   -s, --stop       Stop Docker (Colima) from the terminal            [macOS only]
 
-With no options, DockPilot opens the GUI.
+Commands (manage containers/images/volumes/networks from the terminal):
+  ps, start, stop, restart, rm, rename, restart-policy, mem,
+  logs, stats, inspect, images, pull, rmi, volumes, networks,
+  prune, status
+
+  Run `dockpilot <command> -h` for that command's options.
+
+  Examples:
+    dockpilot ps -a
+    dockpilot rename web-old web-new
+    dockpilot restart-policy web unless-stopped
+    dockpilot mem web 512m
+    dockpilot logs web -f
+    dockpilot prune --all -y
+
+With no options and no command, DockPilot opens the GUI.
 """
+
+_SUBCOMMANDS = {
+    "ps", "start", "stop", "restart", "rm", "rename", "restart-policy", "mem",
+    "logs", "stats", "inspect", "images", "pull", "rmi", "volumes", "networks",
+    "prune", "status",
+}
 
 
 def _upgrade():
@@ -91,9 +113,15 @@ def _upgrade():
 
 
 def main():
-    if "-h" in sys.argv or "--help" in sys.argv:
+    has_subcommand = len(sys.argv) > 1 and sys.argv[1] in _SUBCOMMANDS
+
+    if ("-h" in sys.argv or "--help" in sys.argv) and not has_subcommand:
         print(_HELP, end="")
         sys.exit(0)
+    if has_subcommand:
+        from src.cli.app import cli_main
+        cli_main(sys.argv[1:])
+        return
     if "-u" in sys.argv or "--upgrade" in sys.argv:
         _upgrade()
     if "-d" in sys.argv or "--headless" in sys.argv:
