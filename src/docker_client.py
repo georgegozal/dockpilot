@@ -126,6 +126,16 @@ class DockerClient:
                                           mem_limit=mem_limit,
                                           memswap_limit=mem_limit)
 
+    def rename_container(self, container_id: str, new_name: str):
+        self._client.containers.get(container_id).rename(new_name)
+
+    def set_restart_policy(self, container_id: str, policy: str, max_retry_count: int = 0):
+        """policy is one of: 'no', 'always', 'on-failure', 'unless-stopped'."""
+        self._client.api.update_container(
+            container_id,
+            restart_policy={"Name": policy, "MaximumRetryCount": max_retry_count},
+        )
+
     # ------------------------------------------------------------------
     # Images
     # ------------------------------------------------------------------

@@ -522,7 +522,9 @@ class ContainersPanel(QWidget):
 
         menu.addSeparator()
         menu.addAction("Copy ID", lambda: QApplication.clipboard().setText(cid[:12]))
+        menu.addAction("Rename…", lambda: self._rename_container(cid))
         menu.addAction("Set Memory Limit…", lambda: self._set_memory_limit(cid))
+        menu.addMenu(self._build_restart_policy_menu(cid))
         menu.addSeparator()
         menu.addAction("Logs",    self._open_logs)
         menu.addAction("Terminal",self._open_terminal)
@@ -561,6 +563,62 @@ class ContainersPanel(QWidget):
             return
         limit = value.strip().lower()
         w = ActionWorker(self._docker.update_container, cid, limit)
+        w.success.connect(lambda _: self._refresh())
+        w.error.connect(self._show_error)
+        self._workers.append(w)
+        w.start()
+
+    def _rename_container(self, cid: str):
+        c = self._docker.get_container(cid)
+        current = c.name if c else ""
+        new_name, ok = QInputDialog.getText(
+            self, "Rename Container", "New name:", text=current,
+        )
+        new_name = new_name.strip()
+        if not ok or not new_name or new_name == current:
+            return
+        w = ActionWorker(self._docker.rename_container, cid, new_name)
+        w.success.connect(lambda _: self._refresh())
+        w.error.connect(self._show_error)
+        self._workers.append(w)
+        w.start()
+
+    _RESTART_POLICIES = [
+        ("no",             "Do Not Restart"),
+        ("always",         "Always"),
+        ("unless-stopped", "Always, Unless Stopped"),
+        ("on-failure",     "On Failure"),
+    ]
+
+    def _build_restart_policy_menu(self, cid: str) -> QMenu:
+        submenu = QMenu("Restart Policy", self)
+        submenu.setStyleSheet(f"""
+            QMenu {{ background: #2d2d2d; color: {TEXT}; border: 1px solid {BORDER}; }}
+            QMenu::item:selected {{ background: {ACCENT}; }}
+        """)
+        try:
+            current = self._docker.inspect_container(cid) \
+                .get("HostConfig", {}).get("RestartPolicy", {}).get("Name", "no")
+        except Exception:
+            current = "no"
+
+        for policy, label in self._RESTART_POLICIES:
+            action = submenu.addAction(label, lambda p=policy: self._set_restart_policy(cid, p))
+            action.setCheckable(True)
+            action.setChecked(policy == current)
+        return submenu
+
+    def _set_restart_policy(self, cid: str, policy: str):
+        max_retry = 0
+        if policy == "on-failure":
+            max_retry, ok = QInputDialog.getInt(
+                self, "On Failure — Max Retries",
+                "Maximum retry count (0 = retry forever):",
+                value=0, min=0, max=1000,
+            )
+            if not ok:
+                return
+        w = ActionWorker(self._docker.set_restart_policy, cid, policy, max_retry)
         w.success.connect(lambda _: self._refresh())
         w.error.connect(self._show_error)
         self._workers.append(w)
