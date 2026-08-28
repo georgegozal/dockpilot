@@ -11,6 +11,8 @@ Works on **macOS** (via Colima) and **Linux** (native Docker daemon).
 ## Features
 
 - **Containers** — list all containers with live status dot, ID, ports; start / stop / restart / pause / remove
+- **Rename** — right-click any container → Rename… to give it a new name
+- **Restart policy** — right-click any container → Restart Policy to set Do Not Restart / Always / Always Unless Stopped / On Failure (with a max-retry count)
 - **Memory limits** — right-click any container → Set Memory Limit to cap RAM usage (e.g. `256m`, `1g`, `2g`)
 - **Compose** — containers grouped by `docker-compose` project with per-group actions
 - **Images** — browse, pull, remove, prune dangling images
@@ -20,6 +22,9 @@ Works on **macOS** (via Colima) and **Linux** (native Docker daemon).
 - **Terminal** — interactive shell inside any running container with Tab autocomplete and block cursor
 - **Stats** — live CPU, memory and network sparkline graphs
 - **Inspect** — JSON viewer with syntax highlighting for any resource
+- **Menu-bar tray icon** — Show DockPilot / Preferences / Open at Login / Quit, without keeping a Dock window open; closing the main window hides it to the tray instead of quitting so Colima keeps running in the background
+- **Open at Login** — toggle from the tray menu; backed by a macOS LaunchAgent or Linux XDG autostart entry
+- **Terminal CLI** — manage containers, images, volumes and networks from the shell (`dockpilot ps`, `dockpilot rename …`, `dockpilot restart-policy …`, and more — see [CLI commands](#cli-commands) below)
 - **Colima lifecycle** *(macOS)* — auto-starts Colima on launch; on quit prompts to stop or keep Docker running
 - **Headless mode** *(macOS)* — start or stop Colima from the terminal without opening the GUI (`-d` / `-s`)
 - **Linux support** — connects directly to the Docker daemon; no Colima required
@@ -154,6 +159,47 @@ dockpilot      # open the GUI
 
 ---
 
+## CLI commands
+
+Manage containers, images, volumes and networks from the terminal — no GUI needed.
+A container `<ref>` can be a name or an ID (or a unique prefix of either); an unrecognized
+`<ref>` falls back to a substring match on container names and reports an error if that's ambiguous.
+
+| Command | Description |
+|---------|-------------|
+| `dockpilot ps [-a]` | List containers (running only by default, `-a` for all) |
+| `dockpilot start <ref>` | Start a container |
+| `dockpilot stop <ref> [-t SECS]` | Stop a container |
+| `dockpilot restart <ref> [-t SECS]` | Restart a container |
+| `dockpilot rm <ref> [-f]` | Remove a container (`-f` to force-remove a running one) |
+| `dockpilot rename <ref> <new_name>` | Rename a container |
+| `dockpilot restart-policy <ref> <policy> [--max-retry N]` | Set restart policy: `no`, `always`, `unless-stopped`, `on-failure` |
+| `dockpilot mem <ref> <limit>` | Set a memory limit (e.g. `256m`, `1g`); `0` removes it |
+| `dockpilot logs <ref> [--tail N] [-f]` | Show container logs, optionally following |
+| `dockpilot stats <ref>` | One-shot CPU / memory / network / block I/O snapshot |
+| `dockpilot inspect <ref> [--type container\|image\|volume\|network]` | Raw JSON inspect |
+| `dockpilot images [-a]` | List images |
+| `dockpilot pull <image>[:tag]` | Pull an image |
+| `dockpilot rmi <ref> [-f]` | Remove an image |
+| `dockpilot volumes` | List volumes |
+| `dockpilot networks` | List networks |
+| `dockpilot prune [--images\|--volumes\|--networks\|--all] [-y]` | Remove unused containers/images/volumes/networks |
+| `dockpilot status` | Docker daemon connectivity + Colima state |
+
+Run `dockpilot <command> -h` for a command's exact options.
+
+```sh
+dockpilot ps -a
+dockpilot rename web-old web-new
+dockpilot restart-policy web unless-stopped
+dockpilot restart-policy web on-failure --max-retry 5
+dockpilot mem web 512m
+dockpilot logs web -f
+dockpilot prune --all -y
+```
+
+---
+
 ## How it works
 
 On macOS, Docker always needs a Linux VM to run containers. DockPilot uses **Colima** as the VM engine — it is lighter than Docker Desktop (no Electron UI, no account, ~no background services). DockPilot itself is the GUI layer on top.
@@ -182,15 +228,19 @@ When you close DockPilot, a dialog lets you choose to stop Docker or leave it ru
 
 ```
 dockpilot/
-├── main.py                         Entry point, sets DOCKER_HOST env var
+├── main.py                         Entry point: CLI flags, subcommand dispatch, sets DOCKER_HOST env var
 ├── requirements.txt
 ├── install.sh                      One-script installer (macOS + Linux)
 ├── uninstall.sh                    Removes install dir, launcher, desktop file
 ├── assets/
 │   └── screenshot.png
 └── src/
-    ├── app.py                      QApplication + dark theme
+    ├── app.py                      QApplication + dark theme + tray icon setup
     ├── docker_client.py            Docker SDK wrapper (auto-detects Colima socket)
+    ├── login_item.py               "Open at Login" — macOS LaunchAgent / Linux XDG autostart
+    ├── cli/
+    │   ├── app.py                  argparse subcommand parser + dispatch
+    │   └── commands.py             `dockpilot ps/start/rename/restart-policy/...` implementations
     ├── workers/
     │   ├── action_worker.py        Generic one-shot async worker + FetchWorker (non-blocking polls)
     │   ├── colima_worker.py        Colima start/stop QThread workers (macOS only)
@@ -199,7 +249,8 @@ dockpilot/
     │   └── stats_worker.py         Live container stats
     └── ui/
         ├── main_window.py          Main window + sidebar + Colima lifecycle/quit dialog (macOS only)
-        ├── containers_panel.py     Container list and actions
+        ├── tray_icon.py            Menu-bar icon: Show / Preferences / Open at Login / Quit
+        ├── containers_panel.py     Container list and actions (start/stop/rename/restart policy/mem limit)
         ├── compose_panel.py        Docker Compose project groups
         ├── images_panel.py         Image management
         ├── volumes_panel.py        Volume management
