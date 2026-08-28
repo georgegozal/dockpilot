@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QStackedWidget, QPushButton, QLabel, QFrame,
-    QStatusBar, QMessageBox,
+    QStatusBar, QMessageBox, QApplication,
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSettings
 from PyQt6.QtGui import QFont, QPixmap, QIcon
@@ -228,6 +228,7 @@ class MainWindow(QMainWindow):
         self._colima_started_by_us = False
         self._colima_stop_done = False
         self._colima_worker: ColimaStartWorker | ColimaStopWorker | None = None
+        self._quit_requested = False
 
         # Apply saved XDG icon theme before building UI (Linux only)
         if sys.platform != "darwin":
@@ -380,6 +381,14 @@ class MainWindow(QMainWindow):
         self.close()
 
     def closeEvent(self, event):
+        tray = getattr(QApplication.instance(), "tray", None)
+        if tray is not None and not self._quit_requested:
+            # Menu-bar icon present: the red-X hides to tray instead of quitting.
+            # Real quitting only happens via the tray's "Quit DockPilot" action.
+            event.ignore()
+            self.hide()
+            return
+
         if sys.platform == "darwin" and not self._colima_stop_done and colima_installed() and colima_running():
             msg = QMessageBox(self)
             msg.setWindowTitle("Quit DockPilot")

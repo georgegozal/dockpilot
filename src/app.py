@@ -4,6 +4,7 @@ from PyQt6.QtGui import QPalette, QColor
 
 from src.docker_client import DockerClient
 from src.ui.main_window import MainWindow
+from src.ui.tray_icon import setup_tray
 
 
 DARK_PALETTE = {
@@ -78,4 +79,5 @@ class DockPilotApp(QApplication):
 
         self.docker = DockerClient()
         self.window = MainWindow(self.docker)
+        self.tray = setup_tray(self, self.window)
         self.window.show()
