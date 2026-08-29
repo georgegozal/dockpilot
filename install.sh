@@ -117,6 +117,68 @@ DESKTOP_EOF
   info ".desktop file: ${DESKTOP_FILE}"
 fi
 
+# -- macOS: Homebrew + Colima + docker CLI/compose ----------------------------
+if [[ "$PLATFORM" == "macos" ]]; then
+  _ensure_homebrew() {
+    if command -v brew &>/dev/null; then
+      return
+    fi
+    warn "Homebrew not found, but it's required to install Colima and the Docker CLI."
+    read -r -p "    Install Homebrew now? [Y/n] " yn
+    if [[ "$yn" == [Nn]* ]]; then
+      error "Homebrew is required. Install it from https://brew.sh and re-run this script."
+    fi
+    info "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [[ -x /opt/homebrew/bin/brew ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -x /usr/local/bin/brew ]]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    fi
+    command -v brew &>/dev/null || error "Homebrew install did not complete. Re-run this script after installing it manually."
+  }
+
+  _ensure_brew_pkg() {
+    local pkg="$1"
+    if brew list --formula "$pkg" &>/dev/null; then
+      info "$pkg already installed (brew)."
+    else
+      info "Installing $pkg via Homebrew..."
+      brew install "$pkg"
+    fi
+  }
+
+  _ensure_homebrew
+  _ensure_brew_pkg colima
+  _ensure_brew_pkg docker
+  _ensure_brew_pkg docker-compose
+
+  # Homebrew's docker-compose formula doesn't wire itself up as a CLI plugin --
+  # `docker compose` only works once this symlink exists and is valid.
+  COMPOSE_BIN="$(brew --prefix docker-compose)/bin/docker-compose"
+  CLI_PLUGINS_DIR="$HOME/.docker/cli-plugins"
+  mkdir -p "$CLI_PLUGINS_DIR"
+  if [[ -e "$COMPOSE_BIN" ]]; then
+    ln -sf "$COMPOSE_BIN" "$CLI_PLUGINS_DIR/docker-compose"
+    info "Linked docker-compose CLI plugin -> ${COMPOSE_BIN}"
+  fi
+
+  if command -v colima &>/dev/null; then
+    if colima status &>/dev/null; then
+      info "Colima is already running."
+    else
+      echo ""
+      read -r -p "    Start Colima now? [Y/n] " yn
+      if [[ "$yn" != [Nn]* ]]; then
+        info "Starting Colima (this may take a minute on first run)..."
+        colima start
+      else
+        warn "Skipped. Start it later with: colima start"
+      fi
+    fi
+  fi
+fi
+
 # -- macOS: PATH + DOCKER_HOST + .app bundle ----------------------------------
 if [[ "$PLATFORM" == "macos" ]]; then
   _detect_shell_rc() {

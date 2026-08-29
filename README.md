@@ -38,15 +38,11 @@ The fastest way to install DockPilot — no manual virtualenv, no `python3 main.
 
 ### macOS
 
-First install Colima and the Docker CLI if you haven't already:
-```sh
-brew install colima docker
-```
-
-Then run the installer:
 ```sh
 curl -sSL https://raw.githubusercontent.com/georgegozal/dockpilot/main/install.sh | bash
 ```
+
+The installer requires [Homebrew](https://brew.sh) (it installs Homebrew itself if missing) and uses it to install Colima, the Docker CLI, and `docker-compose` — no manual `brew install` step needed first.
 
 ### Linux
 
@@ -77,8 +73,9 @@ curl -sSL https://raw.githubusercontent.com/georgegozal/dockpilot/main/uninstall
 ### macOS
 - macOS 14+
 - Python 3.10+
+- [Homebrew](https://brew.sh) — required by `install.sh` to install the items below (installed automatically if missing)
 - [Colima](https://github.com/abiosoft/colima) — lightweight Docker VM (replaces Docker Desktop)
-- Docker CLI (`brew install colima docker`)
+- Docker CLI + `docker-compose` (`brew install colima docker docker-compose`)
 
 ### Linux
 - Python 3.10+
@@ -103,10 +100,12 @@ pip install -r requirements.txt
 
 ### macOS
 
-1. Install Colima and Docker CLI:
+1. Install Colima, the Docker CLI, and `docker-compose`:
    ```sh
-   brew install colima docker
+   brew install colima docker docker-compose
+   ln -sf "$(brew --prefix docker-compose)/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
    ```
+   The `ln` step is required — Homebrew's `docker-compose` formula doesn't wire itself up as a `docker compose` CLI plugin on its own.
 2. *(Optional)* Add the Docker socket to your shell config so the `docker` CLI works in every new terminal.
 
    **zsh** (default on macOS):
