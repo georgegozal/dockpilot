@@ -14,7 +14,9 @@ def _headless():
     if sys.platform != "darwin":
         print("Headless mode (-d) requires Colima and is only supported on macOS.", file=sys.stderr)
         sys.exit(1)
-    from src.workers.colima_worker import colima_installed, colima_running, _colima_bin
+    from src.workers.colima_worker import (
+        colima_installed, colima_running, colima_start_args, get_preferred_resources,
+    )
     import subprocess
 
     if not colima_installed():
@@ -25,8 +27,9 @@ def _headless():
         print("Docker (Colima) is already running.")
         sys.exit(0)
 
-    print("Starting Colima…")
-    r = subprocess.run([_colima_bin(), "start"])
+    cpu, memory, disk = get_preferred_resources()
+    print(f"Starting Colima ({cpu} CPU, {memory} GiB RAM, {disk} GiB disk)…")
+    r = subprocess.run(colima_start_args(cpu, memory, disk))
     if r.returncode == 0:
         print("Docker (Colima) started successfully.")
         sys.exit(0)
