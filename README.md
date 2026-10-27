@@ -1,12 +1,19 @@
 # DockPilot
 
+[![Stars](https://img.shields.io/github/stars/georgegozal/dockpilot?style=flat-square)](https://github.com/georgegozal/dockpilot/stargazers)
+[![Forks](https://img.shields.io/github/forks/georgegozal/dockpilot?style=flat-square)](https://github.com/georgegozal/dockpilot/network/members)
+[![License: AGPL-3.0](https://img.shields.io/github/license/georgegozal/dockpilot?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://github.com/georgegozal/dockpilot)
+[![Contributing](https://img.shields.io/badge/contributing-guide-7c3aed?style=flat-square)](CONTRIBUTING.md)
+
 A lightweight Docker Desktop replacement built with Python + PyQt6.
 Manage containers, images, volumes and networks through a clean native GUI — no Electron, no account required.
 Works on **macOS** (via Colima) and **Linux** (native Docker daemon).
 
-![DockPilot](assets/screenshot.png)
+**Contents:** [Features](#features) · [Installation](#installation) · [Requirements](#requirements) · [Development](#development-setup) · [CLI](#cli-flags) · [How it works](#how-it-works) · [Structure](#project-structure) · [Contributing](#contributing) · [Support](#support) · [License](#license)
 
----
+![DockPilot](assets/screenshot.png)
 
 ## Features
 
@@ -262,8 +269,18 @@ dockpilot/
         └── pull_dialog.py          Pull image dialog
 ```
 
----
+## Contributing
+
+Fork the repo, work on a branch, and open a pull request against [georgegozal/dockpilot](https://github.com/georgegozal/dockpilot). See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, PR workflow, and commit conventions.
+
+## Support
+
+DockPilot is **free software** ([AGPL-3.0](LICENSE)). You can use, study, modify, and share it under that license — no payment required.
+
+If the app saves you time, optional tips help fund maintenance and new features. Tips do not unlock extra features or a “pro” edition.
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/georgegozal)
 
 ## License
 
-GNU Affero General Public License v3.0 — see [LICENSE](LICENSE) for details.
+DockPilot is free software released under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. See [LICENSE](LICENSE) for the full text.
